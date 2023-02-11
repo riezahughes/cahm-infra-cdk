@@ -1,7 +1,10 @@
 import * as cdk from "aws-cdk-lib";
 import { SecretValue } from "aws-cdk-lib";
-import { aws_codepipeline as codePipeline } from "aws-cdk-lib";
-import { CodePipeline } from "aws-cdk-lib/pipelines";
+import {
+  CodePipeline,
+  CodePipelineSource,
+  ShellStep,
+} from "aws-cdk-lib/pipelines";
 import { Construct } from "constructs";
 
 export class CahPipelineStack extends cdk.Stack {
@@ -10,10 +13,16 @@ export class CahPipelineStack extends cdk.Stack {
 
     // Pipeline code goes here
 
-    const githubToken = SecretValue.secretsManager("GITHUB_SECRET");
-
-    const sourceArtifact = new codePipeline.Artifact();
-    const cloudAssemblyArtifact = new codePipeline.Artifact();
+    const pipeline = new CodePipeline(this, "CahmFrontendPipeline", {
+      pipelineName: "MyPipeline",
+      synth: new ShellStep("Synth", {
+        input: CodePipelineSource.gitHub(
+          "/riezahughes/cards-against-huge-manatees",
+          "master"
+        ),
+        commands: ["npm ci", "npm run build", "npx cdk synth"],
+      }),
+    });
 
     // const pipeline = new
   }
