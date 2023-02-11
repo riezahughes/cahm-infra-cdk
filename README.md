@@ -2,7 +2,9 @@
 
 I've designed this repo to be standalone and seperate from the project. This will be my best exmaple of showing what i can do with AWS's CDK. The repo attached to this project will be linked below once it's set up and built.
 
-# Welcome to your CDK TypeScript project
+---
+
+## Welcome to your CDK TypeScript project
 
 This is a blank project for CDK development with TypeScript.
 
