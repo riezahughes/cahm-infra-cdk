@@ -5,7 +5,7 @@ import { CahCloneProjectStack } from "../lib/cah-clone-project-stack";
 import { CahPipelineStack } from "../lib/pipeline-stack";
 
 const app = new cdk.App();
-new CahCloneProjectStack(app, "CahPipelineStack");
+new CahPipelineStack(app, "CahPipelineStack");
 new CahCloneProjectStack(app, "CahCloneProjectStack", {
   /* If you don't specify 'env', this stack will be environment-agnostic.
    * Account/Region-dependent features and context lookups will not work,

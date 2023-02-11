@@ -17,8 +17,11 @@ export class CahPipelineStack extends cdk.Stack {
       pipelineName: "MyPipeline",
       synth: new ShellStep("Synth", {
         input: CodePipelineSource.gitHub(
-          "/riezahughes/cards-against-huge-manatees",
-          "master"
+          "riezahughes/cards-against-huge-manatees",
+          "master",
+          {
+            authentication: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
+          }
         ),
         commands: ["npm ci", "npm run build", "npx cdk synth"],
       }),
