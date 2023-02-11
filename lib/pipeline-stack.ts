@@ -23,7 +23,7 @@ export class CahPipelineStack extends cdk.Stack {
             authentication: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
           }
         ),
-        commands: ["npm ci", "npm run build", "npx cdk synth"],
+        commands: ["cd frontend", "npm ci", "npm run build", "npx cdk synth"],
       }),
     });
 

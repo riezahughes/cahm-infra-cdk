@@ -7,6 +7,13 @@ import {
   aws_codebuild as codebuild,
   aws_apigateway as apigateway,
 } from "aws-cdk-lib";
+
+import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
+import {
+  Certificate,
+  CertificateValidation,
+} from "aws-cdk-lib/aws-certificatemanager";
+
 // import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class CahCloneProjectStack extends cdk.Stack {
@@ -14,9 +21,16 @@ export class CahCloneProjectStack extends cdk.Stack {
     super(scope, id, props);
 
     const cahCloneWebsite = new s3.Bucket(this, "cahCloneWebsite", {
-      publicReadAccess: true,
+      websiteIndexDocument: "index.html", // your sites main page
+      websiteErrorDocument: "index.html", // for simplicity
+      publicReadAccess: false, // we'll use Cloudfront to access
+      blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
-      websiteIndexDocument: "index.html",
+    });
+
+    const cert = new Certificate(this, "Certificate", {
+      domainName: "cahm.online",
+      validation: CertificateValidation.fromDns(),
     });
 
     // const cahCloneFrontendPipeline = new pipeline.Pipeline()
