@@ -7,7 +7,11 @@ import {
   aws_codebuild as codebuild,
   aws_apigateway as apigateway,
 } from "aws-cdk-lib";
-
+import {
+  CodePipeline,
+  CodePipelineSource,
+  ShellStep,
+} from "aws-cdk-lib/pipelines";
 import { BlockPublicAccess } from "aws-cdk-lib/aws-s3";
 import {
   Certificate,
@@ -26,6 +30,24 @@ export class CahCloneProjectStack extends cdk.Stack {
       publicReadAccess: false, // we'll use Cloudfront to access
       blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+    });
+
+    const pipeline = new CodePipeline(this, "CahmFrontendPipeline", {
+      pipelineName: "CahmFrontendPipeline",
+      synth: new ShellStep("Synth", {
+        input: CodePipelineSource.gitHub("riezahughes/cahm-repo", "master", {
+          authentication: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
+        }),
+
+        primaryOutputDirectory: "dist",
+        commands: [
+          "cd frontend",
+          "ls -la src/assets",
+          "npm i",
+          "npm run build",
+          "npx cdk synth",
+        ],
+      }),
     });
 
     const cert = new Certificate(this, "Certificate", {

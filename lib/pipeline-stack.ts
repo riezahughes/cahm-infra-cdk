@@ -14,15 +14,21 @@ export class CahPipelineStack extends cdk.Stack {
     // Pipeline code goes here
 
     const pipeline = new CodePipeline(this, "CahmFrontendPipeline", {
-      pipelineName: "MyPipeline",
+      pipelineName: "CahmFrontendPipeline",
       synth: new ShellStep("Synth", {
         input: CodePipelineSource.gitHub("riezahughes/cahm-repo", "master", {
           authentication: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
         }),
-        commands: ["cd frontend", "npm ci", "npm run build", "npx cdk synth"],
+
+        primaryOutputDirectory: "dist",
+        commands: [
+          "cd frontend",
+          "ls -la src/assets",
+          "npm ci",
+          "npm run build",
+          "npx cdk synth",
+        ],
       }),
     });
-
-    // const pipeline = new
   }
 }
