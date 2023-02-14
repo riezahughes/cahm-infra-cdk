@@ -3,8 +3,10 @@ import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import { CahCloneProjectStack } from "../lib/cah-clone-project-stack";
 import { CahPipelineStack } from "../lib/pipeline-stack";
+import { CahDomainStack } from "../lib/domain-stack";
 
 const app = new cdk.App();
+new CahDomainStack(app, "CahDomainStack");
 new CahPipelineStack(app, "CahPipelineStack");
 new CahCloneProjectStack(app, "CahCloneProjectStack", {
   /* If you don't specify 'env', this stack will be environment-agnostic.

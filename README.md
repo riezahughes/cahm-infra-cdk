@@ -1,8 +1,19 @@
 # Infrastructure using CDK
 
-I've designed this repo to be standalone and seperate from the project. This will be my best exmaple of showing what i can do with AWS's CDK. The repo attached to this project will be linked below once it's set up and built.
+I've designed this repo to be standalone and seperate from the project. This willagood example of showing what i can do with AWS's CDK. The repo attached to this project will be linked below once it's set up and built.
 
----
+The project uses an _external_ domain to set up. As such there's a manual step involved rather than having the domain in Route53.
+
+- `npm run build`
+- `cdk synth`
+- `cdk deploy CahDomainStack`
+- Manually set the name servers
+- `cdk deploy CahCloneProjectStack`
+- Check resources to make sure everything is ready.
+
+sick of it? Fucked it up?
+
+`cdk destroy [stackname without the brackets]`
 
 ## Welcome to your CDK TypeScript project
 
