@@ -11,7 +11,7 @@ export class CahPipelineStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // buckets for deploy
+    // buckets for deploying. One for the actual website, one for the artifacts for the pipeline
 
     const cahCloneWebsite = new s3.Bucket(this, "cahCloneWebsite", {
       bucketName: "test-cah-clone",
@@ -27,13 +27,18 @@ export class CahPipelineStack extends cdk.Stack {
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
-    // Pipeline code goes here
+    // Create a new pipeline codebuild project. Make sure to specify the buildspec of the repo and the image to be used.
 
     const project = new codebuild.PipelineProject(this, "CahmCodeBuild", {
       buildSpec: codebuild.BuildSpec.fromSourceFilename(
         "frontend/buildspec.yml"
       ),
+      environment: {
+        buildImage: codebuild.LinuxBuildImage.STANDARD_6_0,
+      },
     });
+
+    // Create the new pipeline
 
     const deployPipeline = new pipeline.Pipeline(this, "CahmFrontendPipeline", {
       pipelineName: "CahmFrontendPipeline",
@@ -41,7 +46,12 @@ export class CahPipelineStack extends cdk.Stack {
       artifactBucket,
     });
 
+    // define the artifacts
+
     const sourceOutput = new pipeline.Artifact();
+    const buildOutput = new pipeline.Artifact();
+
+    // github connection setup
 
     const sourceAction = new actions.GitHubSourceAction({
       actionName: "GitHub_Source",
@@ -52,18 +62,25 @@ export class CahPipelineStack extends cdk.Stack {
       branch: "master", // default: 'master'
     });
 
+    // codebuild setup
+
     const buildAction = new actions.CodeBuildAction({
       actionName: "CodeBuild",
       project,
       input: sourceOutput,
-      outputs: [new pipeline.Artifact()], // optional
+      outputs: [buildOutput], // optional
     });
+
+    // S3 deployment setup
 
     const deployAction = new actions.S3DeployAction({
       actionName: "S3Deploy",
       bucket: cahCloneWebsite,
-      input: sourceOutput,
+      input: buildOutput,
+      extract: true,
     });
+
+    // putting everything together!
 
     deployPipeline.addStage({
       stageName: "Source",

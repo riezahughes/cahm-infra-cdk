@@ -13,69 +13,40 @@ import {
   aws_codecommit as codecommit,
 } from "aws-cdk-lib";
 import {
-  CodePipeline,
-  CodePipelineSource,
-  ShellStep,
-} from "aws-cdk-lib/pipelines";
-import {
   Certificate,
   CertificateValidation,
 } from "aws-cdk-lib/aws-certificatemanager";
-import { OriginAccessIdentity } from "aws-cdk-lib/aws-cloudfront";
-import { PolicyStatement } from "aws-cdk-lib/aws-iam";
-
-// import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 export class CahCloneProjectStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // search for domain
+    // create hosted zone for route53 domain
 
     const route = new route53.PublicHostedZone(this, "HostedZone", {
-      zoneName: "cahm.online",
+      zoneName: "cahm.link",
     });
 
-    // bucket for storing the project
-    const cahCloneWebsite = new s3.Bucket(this, "cahCloneWebsite", {
-      bucketName: "test-cah-clone",
-      publicReadAccess: false, // we'll use Cloudfront to access
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    const artifactBucket = new s3.Bucket(this, "cahm-deploy-bucket", {
-      bucketName: "test-cah-clone-deployment",
-      publicReadAccess: false, // we'll use Cloudfront to access
-      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
-
-    // const accessIdentity = new OriginAccessIdentity(this, "CloudfrontAccess");
-    // const cloudfrontUserAccessPolicy = new PolicyStatement();
-    // cloudfrontUserAccessPolicy.addActions("s3:GetObject");
-    // cloudfrontUserAccessPolicy.addPrincipals(accessIdentity.grantPrincipal);
-    // cloudfrontUserAccessPolicy.addResources(cahCloneWebsite.arnForObjects("*"));
-    // cahCloneWebsite.addToResourcePolicy(cloudfrontUserAccessPolicy);
-
-    const certArn =
-      "arn:aws:acm:us-east-1:839586265759:certificate/5443e611-d748-456f-8972-0cfbd1279eec";
-
-    const cert = Certificate.fromCertificateArn(
+    // bucket the project is stored on.
+    const cahCloneWebsite = s3.Bucket.fromBucketName(
       this,
-      "CahmCertificateImported",
-      certArn
+      "cahCloneWebsite",
+      "test-cah-clone"
     );
 
-    // const cert = new Certificate(this, "Certificate", {
-    //   domainName: "cahm.online",
-    //   certificateName: "cahmonline",
-    //   validation: CertificateValidation.fromDns(),
-    // });
+    // set up ssl certificate
+
+    const cert = new Certificate(this, "Certificate", {
+      domainName: "cahm.link",
+      certificateName: "cahmlink",
+      validation: CertificateValidation.fromDns(route),
+    });
+
+    // run cloudfront
 
     new cloudfront.Distribution(this, "cahmCloudfront", {
       defaultBehavior: { origin: new origins.S3Origin(cahCloneWebsite) },
-      domainNames: ["cahm.online"],
+      domainNames: ["cahm.link"],
       certificate: cert,
     });
 
@@ -123,75 +94,6 @@ export class CahCloneProjectStack extends cdk.Stack {
     //     ],
     //   }
     // );
-
-    const project = new codebuild.PipelineProject(this, "CahmCodeBuild");
-
-    const deployPipeline = new pipeline.Pipeline(this, "CahmFrontendPipeline", {
-      pipelineName: "CahmFrontendPipeline",
-      crossAccountKeys: false,
-      artifactBucket,
-    });
-
-    const sourceOutput = new pipeline.Artifact();
-
-    const sourceAction = new actions.GitHubSourceAction({
-      actionName: "GitHub_Source",
-      owner: "riezahughes",
-      repo: "cahm-repo",
-      oauthToken: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
-      output: sourceOutput,
-      branch: "master", // default: 'master'
-    });
-
-    const buildAction = new actions.CodeBuildAction({
-      actionName: "CodeBuild",
-      project,
-      input: sourceOutput,
-      outputs: [new pipeline.Artifact()], // optional
-      executeBatchBuild: true, // optional, defaults to false
-      combineBatchBuildArtifacts: true, // optional, defaults to false
-    });
-
-    const deployAction = new actions.S3DeployAction({
-      actionName: "S3Deploy",
-      bucket: cahCloneWebsite,
-      input: sourceOutput,
-    });
-
-    deployPipeline.addStage({
-      stageName: "Source",
-      actions: [sourceAction],
-    });
-
-    deployPipeline.addStage({
-      stageName: "Build",
-      actions: [buildAction],
-    });
-
-    deployPipeline.addStage({
-      stageName: "Deploy",
-      actions: [deployAction],
-    });
-
-    // const pipeline = new CodePipeline(this, "CahmFrontendPipeline", {
-    //   pipelineName: "CahmFrontendPipeline",
-    //   synth: new ShellStep("Synth", {
-    //     input: CodePipelineSource.gitHub("riezahughes/cahm-repo", "master", {
-    //       authentication: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
-    //     }),
-
-    //     primaryOutputDirectory: "frontend/dist",
-    //     commands: [
-    //       "cd frontend",
-    //       "npm i",
-    //       "npm run build",
-    //       "cd ../",
-    //       "npx cdk synth",
-    //     ],
-    //   }),
-    // });
-
-    // const cahCloneFrontendPipeline = new pipeline.Pipeline()
 
     // FRONTEND
     // Needs a website bucket with custom DNS, needs a codepipeline, needs a codebuild
