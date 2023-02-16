@@ -7,7 +7,7 @@ import {
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-export class CahPipelineStack extends cdk.Stack {
+export class CahFrontendPipelineStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
