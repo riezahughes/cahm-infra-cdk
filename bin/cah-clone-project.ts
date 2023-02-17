@@ -1,12 +1,14 @@
 #!/usr/bin/env node
 import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
-import { CahApiStack } from "../lib/api-stack";
-import { CahFrontendPipelineStack } from "../lib/fe-pipeline-stack";
-import { CahDomainStack } from "../lib/domain-stack";
-import { CahCertStack } from "../lib/cert-stack";
-import { CahCloudfrontStack } from "../lib/cf-stack";
-import { CahLambdaStack } from "../lib/lambda-stack";
+import {
+  CahApiStack,
+  CahFrontendPipelineStack,
+  CahDomainStack,
+  CahCertStack,
+  CahCloudfrontStack,
+  CahLambdaStack,
+} from "../lib/";
 
 const app = new cdk.App();
 new CahDomainStack(app, "CahDomainStack");
