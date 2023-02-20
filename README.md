@@ -6,12 +6,14 @@ The project requires the following manual steps:
 
 - Creating a Certificate for the domain using ACM
 
-- `npm run build`
+There's a bunch of steps here for building, but i'll get to that later. Right now i'mi too busy building.
+
+<!-- - `npm run build`
 - `cdk synth`
 - `cdk deploy CahDomainStack`
 - Manually set the name servers
 - `cdk deploy CahCloneProjectStack`
-- Check resources to make sure everything is ready.
+- Check resources to make sure everything is ready. -->
 
 sick of it? Fucked it up?
 

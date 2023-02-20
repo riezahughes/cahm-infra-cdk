@@ -3,6 +3,7 @@ import "source-map-support/register";
 import * as cdk from "aws-cdk-lib";
 import {
   CahApiStack,
+  CahLambdaPipelineStack,
   CahFrontendPipelineStack,
   CahDomainStack,
   CahCertStack,
@@ -12,6 +13,7 @@ import {
 
 const app = new cdk.App();
 new CahDomainStack(app, "CahDomainStack");
+new CahLambdaPipelineStack(app, "CahLambdaPipelineStack");
 new CahFrontendPipelineStack(app, "CahPipelineStack");
 new CahCertStack(app, "CahCertStack");
 new CahLambdaStack(app, "CahLambdaStack");

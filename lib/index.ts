@@ -4,6 +4,7 @@ import { CahCloudfrontStack } from "./cloudformation/cf-stack";
 import { CahDomainStack } from "./domain/domain-stack";
 import { CahLambdaStack } from "./lambda/lambda-stack";
 import { CahFrontendPipelineStack } from "./pipeline/fe-pipeline-stack";
+import { CahLambdaPipelineStack } from "./pipeline/lambda-pipeline-stack";
 
 export {
   CahApiStack,
@@ -12,4 +13,5 @@ export {
   CahDomainStack,
   CahLambdaStack,
   CahFrontendPipelineStack,
+  CahLambdaPipelineStack,
 };
