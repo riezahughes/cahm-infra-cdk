@@ -1,41 +1,52 @@
 import * as cdk from "aws-cdk-lib";
 import {
   aws_s3 as s3,
+  aws_sns as sns,
+  aws_iam as iam,
+  aws_codebuild as codebuild,
   aws_codepipeline as pipeline,
   aws_codepipeline_actions as actions,
-  aws_codebuild as codebuild,
-  aws_iam as iam,
 } from "aws-cdk-lib";
 import { Construct } from "constructs";
 
-export class CahLambdaPipelineStack extends cdk.Stack {
-  constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+export interface LambdaDeploymentProps {
+  name?: string;
+  buildSpecDir?: string;
+  ghOwner?: string;
+  ghRepo?: string;
+  ghBranch?: string;
+}
 
-    // buckets for deploying. One for lambda artifacts
+export class LambdaDeploymentStack extends Construct {
+  constructor(scope: Construct, id: string, props: LambdaDeploymentProps = {}) {
+    super(scope, id);
 
-    const artifactBucket = new s3.Bucket(this, "cahm-lambda-deploy-bucket", {
-      bucketName: "test-cah-lambda-deployment",
+    const bucket = new s3.Bucket(this, `${props.name}-lambda-deploy-bucket`, {
+      bucketName: `${props.name}-lambda-deploy-bucket`,
       publicReadAccess: false,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 
     const codebuildS3Perms = new iam.PolicyStatement({
       actions: ["s3:Put*"],
-      resources: [artifactBucket.arnForObjects("*")],
+      resources: [bucket.arnForObjects("*")],
       principals: [new iam.AnyPrincipal()],
     });
 
-    artifactBucket.addToResourcePolicy(codebuildS3Perms);
+    bucket.addToResourcePolicy(codebuildS3Perms);
 
-    // Create a new pipeline codebuild project. Make sure to specify the buildspec of the repo and the image to be used.
-
-    const project = new codebuild.PipelineProject(this, "CahmCodeBuild", {
-      buildSpec: codebuild.BuildSpec.fromSourceFilename("buildspec.yml"),
-      environment: {
-        buildImage: codebuild.LinuxBuildImage.STANDARD_6_0,
-      },
-    });
+    const project = new codebuild.PipelineProject(
+      this,
+      `${props.name}-pipeline-project`,
+      {
+        buildSpec: codebuild.BuildSpec.fromSourceFilename(
+          `${props.buildSpecDir}`
+        ),
+        environment: {
+          buildImage: codebuild.LinuxBuildImage.STANDARD_6_0,
+        },
+      }
+    );
 
     project.addToRolePolicy(
       new iam.PolicyStatement({
@@ -49,11 +60,11 @@ export class CahLambdaPipelineStack extends cdk.Stack {
 
     const deployPipeline = new pipeline.Pipeline(
       this,
-      "CahmApiCardsLambdaPipeline",
+      `${props.name}-lambda-pipeline`,
       {
-        pipelineName: "test-cahm-lambda-rest-resource-cards",
+        pipelineName: `${props.name}-lambda-pipeline`,
         crossAccountKeys: false,
-        artifactBucket,
+        artifactBucket: bucket,
       }
     );
 
@@ -65,11 +76,11 @@ export class CahLambdaPipelineStack extends cdk.Stack {
 
     const sourceAction = new actions.GitHubSourceAction({
       actionName: "GitHub_Source",
-      owner: "riezahughes",
-      repo: "cahm-lambda-endpoint-cards",
+      owner: `${props.ghOwner}`,
+      repo: `${props.ghRepo}`,
       oauthToken: cdk.SecretValue.secretsManager("CAHM_GITHUB_REPO"),
       output: sourceOutput,
-      branch: "master", // default: 'master'
+      branch: `${props.ghBranch}`, // default: 'master'
     });
 
     // codebuild setup
@@ -86,9 +97,8 @@ export class CahLambdaPipelineStack extends cdk.Stack {
       stageName: "Source",
       actions: [sourceAction],
     });
-
     deployPipeline.addStage({
-      stageName: "BuildDeploy",
+      stageName: "Build",
       actions: [buildAction],
     });
   }
