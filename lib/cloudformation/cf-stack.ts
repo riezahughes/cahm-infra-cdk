@@ -8,6 +8,7 @@ import {
   aws_certificatemanager as acm,
   aws_s3_deployment as s3deploy,
   aws_route53_targets as route53Targets,
+  aws_route53_patterns as pattern,
   CfnOutput as logging,
   aws_iam as iam,
   aws_ssm as smm,
@@ -17,6 +18,8 @@ export class CahCloudfrontStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // pulls in existing hosted zone route
+
     const route = route53.HostedZone.fromLookup(
       this,
       "cahm-online-hosted-zone",
@@ -25,11 +28,15 @@ export class CahCloudfrontStack extends cdk.Stack {
       }
     );
 
+    // pulls in the certificate from ACM related to the domain using value stored in smm. (done on the cert stack)
+
     const cert = acm.Certificate.fromCertificateArn(
       this,
       `cahm-online-cert`,
       smm.StringParameter.valueForStringParameter(this, "/certstack/certarn")
     );
+
+    // pulls in the website bucket
 
     const cahCloneWebsite = s3.Bucket.fromBucketName(
       this,
@@ -64,7 +71,7 @@ export class CahCloudfrontStack extends cdk.Stack {
       this,
       "cahm-cloudfront-dist",
       {
-        domainNames: ["cahm.online", "www.cahm.online"],
+        domainNames: ["cahm.online"],
         defaultBehavior: {
           origin: new origins.S3Origin(cahCloneWebsite, {
             originAccessIdentity: cloudFrontAccess,
@@ -105,13 +112,10 @@ export class CahCloudfrontStack extends cdk.Stack {
       ),
     });
 
-    new route53.ARecord(this, "cah-www-route", {
-      recordName: "www.cahm.online",
+    new pattern.HttpsRedirect(this, "wwwToNonWww", {
+      recordNames: ["www.cahm.online"],
+      targetDomain: "cahm.online",
       zone: route,
-      ttl: cdk.Duration.seconds(20),
-      target: route53.RecordTarget.fromAlias(
-        new route53Targets.CloudFrontTarget(cloudFrontDist)
-      ),
     });
 
     new logging(this, "DeployURL", {
