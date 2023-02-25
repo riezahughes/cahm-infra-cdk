@@ -1,1 +1,10 @@
-{}
+{
+  "hosted-zone:account=839586265759:domainName=cahm.online:region=us-east-1": {
+    "Id": "/hostedzone/Z00876872Y9IG7Z0NXX1K",
+    "Name": "cahm.online."
+  },
+  "hosted-zone:account=839586265759:domainName=cahm.online:region=eu-west-1": {
+    "Id": "/hostedzone/Z00876872Y9IG7Z0NXX1K",
+    "Name": "cahm.online."
+  }
+}

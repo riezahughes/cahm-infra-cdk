@@ -1,5 +1,7 @@
 # Infrastructure using CDK
 
+MAKE SURE HOSTED ZONE IS MADE
+
 I've designed this repo to be standalone and seperate from the project. This willagood example of showing what i can do with AWS's CDK. The repo attached to this project will be linked below once it's set up and built.
 
 The project requires the following manual steps:

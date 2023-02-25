@@ -13,11 +13,18 @@ export class CahFrontendPipelineStack extends cdk.Stack {
 
     // buckets for deploying. One for the actual website, one for the artifacts for the pipeline
 
-    const cahCloneWebsite = new s3.Bucket(this, "cahCloneWebsite", {
+    const cahCloneWebsite = new s3.Bucket(this, "cah-clone-website", {
       bucketName: "test-cah-clone",
       publicReadAccess: false, // we'll use Cloudfront to access
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
+      cors: [
+        {
+          allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.HEAD],
+          allowedOrigins: ["*"],
+          allowedHeaders: ["*"],
+        },
+      ],
     });
 
     const artifactBucket = new s3.Bucket(this, "cahm-deploy-bucket", {

@@ -11,10 +11,15 @@ export class CahDomainStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Pipeline code goes here
+    // Requires a manual setup of making sure the domain exists
+    //
 
-    const route = new route53.PublicHostedZone(this, "HostedZone", {
-      zoneName: "cahm.online",
-    });
+    const route = route53.HostedZone.fromLookup(
+      this,
+      "cahm-route53-hosted-zone",
+      {
+        domainName: "cahm.online",
+      }
+    );
   }
 }

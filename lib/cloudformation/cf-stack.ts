@@ -5,15 +5,31 @@ import {
   aws_s3 as s3,
   aws_cloudfront as cloudfront,
   aws_cloudfront_origins as origins,
+  aws_certificatemanager as acm,
+  aws_s3_deployment as s3deploy,
+  aws_route53_targets as route53Targets,
+  CfnOutput as logging,
+  aws_iam as iam,
+  aws_ssm as smm,
 } from "aws-cdk-lib";
 
 export class CahCloudfrontStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const route = new route53.PublicHostedZone(this, "HostedZone", {
-      zoneName: "cahm.link",
-    });
+    const route = route53.HostedZone.fromLookup(
+      this,
+      "cahm-online-hosted-zone",
+      {
+        domainName: "cahm.online",
+      }
+    );
+
+    const cert = acm.Certificate.fromCertificateArn(
+      this,
+      `cahm-online-cert`,
+      smm.StringParameter.valueForStringParameter(this, "/certstack/certarn")
+    );
 
     const cahCloneWebsite = s3.Bucket.fromBucketName(
       this,
@@ -21,12 +37,88 @@ export class CahCloudfrontStack extends cdk.Stack {
       "test-cah-clone"
     );
 
-    const cert = "<insert cert here>";
+    const cloudFrontAccess = new cloudfront.OriginAccessIdentity(
+      this,
+      "cahm-cloudfront-permissions-for-s3",
+      {
+        comment: "Setup for permissions and the s3 bucket",
+      }
+    );
 
-    // new cloudfront.Distribution(this, "cahmCloudfront", {
-    //   defaultBehavior: { origin: new origins.S3Origin(cahCloneWebsite) },
-    //   domainNames: ["cahm.link"],
-    //   certificate: cert,
-    // });
+    const policyStatement = new iam.PolicyStatement({
+      actions: ["s3:GetObject"],
+      resources: [cahCloneWebsite.arnForObjects("*")],
+      principals: [cloudFrontAccess.grantPrincipal],
+    });
+
+    const bucketPolicy = new s3.BucketPolicy(
+      this,
+      "cloudfrontAccessBucketPolicy",
+      {
+        bucket: cahCloneWebsite,
+      }
+    );
+    bucketPolicy.document.addStatements(policyStatement);
+
+    const cloudFrontDist = new cloudfront.Distribution(
+      this,
+      "cahm-cloudfront-dist",
+      {
+        domainNames: ["cahm.online", "www.cahm.online"],
+        defaultBehavior: {
+          origin: new origins.S3Origin(cahCloneWebsite, {
+            originAccessIdentity: cloudFrontAccess,
+          }),
+          compress: true,
+          allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
+        },
+        errorResponses: [
+          {
+            httpStatus: 403,
+            responsePagePath: "/index.html",
+            responseHttpStatus: 200,
+            ttl: cdk.Duration.minutes(0),
+          },
+          {
+            httpStatus: 404,
+            responsePagePath: "/index.html",
+            responseHttpStatus: 200,
+            ttl: cdk.Duration.minutes(0),
+          },
+        ],
+        priceClass: cloudfront.PriceClass.PRICE_CLASS_100,
+        enabled: true,
+        certificate: cert,
+        minimumProtocolVersion: cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021,
+        httpVersion: cloudfront.HttpVersion.HTTP2,
+        defaultRootObject: "index.html",
+        enableIpv6: true,
+      }
+    );
+
+    new route53.ARecord(this, "cah-non-www-route", {
+      recordName: "cahm.online",
+      zone: route,
+      ttl: cdk.Duration.seconds(20),
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.CloudFrontTarget(cloudFrontDist)
+      ),
+    });
+
+    new route53.ARecord(this, "cah-www-route", {
+      recordName: "www.cahm.online",
+      zone: route,
+      ttl: cdk.Duration.seconds(20),
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.CloudFrontTarget(cloudFrontDist)
+      ),
+    });
+
+    new logging(this, "DeployURL", {
+      value: `https://cahm.online`,
+    });
+    new logging(this, "CertArn", {
+      value: cert.certificateArn,
+    });
   }
 }
